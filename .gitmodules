@@ -1,0 +1,3 @@
+[submodule "libs/binaryheap"]
+	path = libs/binaryheap
+	url = git@github.com:iskolbin/binaryheap.git
