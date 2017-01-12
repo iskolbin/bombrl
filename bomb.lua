@@ -1,5 +1,6 @@
 local assets = require('assets')
 local unpack = table.unpack or unpack
+local PriorityQueue = require('libs.priorityqueue.PriorityQueue')
 
 local bomb = {
 	DIRECTIONS = {
@@ -32,7 +33,7 @@ function bomb.loadlevel( level )
 	local enemies = {}
 	local playerpos = {1,1}
 	local bonuses = {}
-	local actions = require('libs.binaryheap.IndirectBinaryMinHeap')()
+	local actions = PriorityQueue()
 	
 	for y, line in ipairs( level.tiles ) do
 		local x = 0
