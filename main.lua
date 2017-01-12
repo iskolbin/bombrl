@@ -70,18 +70,9 @@ while active do
 	luabox.clear()
 	update( state )
 	render( state )
-
---	ok, err = pcall( update, state )
---	active = ok
---	if ok then
---		ok, err = pcall( render, state )
-		bomb.clearexplossions( state )
---		active = ok
---		if ok then
-			luabox.present()
-			luabox.peek()
---		end
---	end
+	bomb.clearexplossions( state )
+	luabox.present()
+	luabox.peek()
 end
 
 luabox.shutdown()

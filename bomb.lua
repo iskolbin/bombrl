@@ -28,43 +28,73 @@ function bomb.init()
 	end
 end
 
+local function genlevel( level )
+	local w, h, density = level.width, level.height, level.density
+	local tiles = {}
+	local top, free, bottom = {}, {}, {}
+	for x = 1, w do
+		top[x], free[x], bottom[x] = '#', ' ', '#'
+	end
+	for x = 4, w do
+		free[x] = (math.random()>level.density) and ' ' or '*'
+	end
+	free[1], free[w] = '#', '#'
+	tiles[#tiles+1] = top
+	tiles[#tiles+1] = free
+	for y = 2, h-1, 2 do
+		local walled, free = {}, {}
+		walled[1], free[1] = '#', '#'
+		for x = 2, w-1 do
+			walled[x] = (x % 2) == 1 and '#' or (math.random()>level.density) and ' ' or '*'
+			free[x] = (math.random()>level.density) and ' ' or '*'
+		end
+		walled[w], free[w] = '#', '#'
+		tiles[#tiles+1] = walled
+		tiles[#tiles+1] = free
+	end
+	tiles[3][2] = ' '
+	tiles[#tiles+1] = bottom
+	return tiles
+end
+
+local function genenemies( level, tiles )
+	local enemies = {}
+	local w, h, density = level.width, level.height, level.density
+	for e, count in pairs( level.enemies ) do
+		for i = 1, count do
+			local x, y = math.random( 2, w-1 ), math.random( 2, h-1 )
+			while tiles[y][x] ~= ' ' and tiles[y][x] ~= '*' and (x < 5 and y < 5) do
+				x, y = math.random( 2, w-1 ), math.random( 2, h-1 )
+			end
+			tiles[y][x] = ' '
+			local prototype = assets.enemies[e]
+			local enemy = {
+				x = x,
+				y = y,
+				hp = prototype.hp,
+				prototype = prototype,
+				direction = bomb.DIRECTIONS[math.random(#bomb.DIRECTIONS)],
+				enemy = true,
+			}
+			enemies[enemy] = true
+		end
+	end
+	return enemies
+end
+
 function bomb.loadlevel( level )
 	local tiles = {}
 	local enemies = {}
-	local playerpos = {1,1}
 	local bonuses = {}
 	local actions = PriorityQueue()
-	
-	for y, line in ipairs( level.tiles ) do
-		local x = 0
-		tiles[y] = {}
-		for ch in string.gmatch( line, '.' ) do
-			x = x + 1
-			if ch == '#' or ch == ' ' or ch == '*' or symbol2bonus[ch] then
-				tiles[y][x] = ch
-			elseif ch == '@' then
-				playerpos = {y = y, x = x}
-				tiles[y][x] = ' '
-			elseif symbol2enemy[ch] then
-				local prototype = symbol2enemy[ch]
-				local enemy = {
-					x = x,
-					y = y,
-					hp = prototype.hp,
-					prototype = prototype,
-					direction = bomb.DIRECTIONS[math.random(#bomb.DIRECTIONS)],
-					enemy = true,
-				}
-				enemies[enemy] = true
-				tiles[y][x] = ' '
-			else
-				error(( 'Unknown character at row %d column %d: %q' ):format( y, x, ch ))
-			end
-		end
-	end
 
-	for _, bonus in pairs( level.bonuses ) do
-		bonuses[#bonuses+1] = assets.bonuses[bonus]
+	local tiles = genlevel( level )
+	local enemies = genenemies( level, tiles )
+	
+	for bonus, count in pairs( level.bonuses ) do
+		for i = 1, count do
+			bonuses[#bonuses+1] = assets.bonuses[bonus]
+		end
 	end
 
 	return {
@@ -73,7 +103,7 @@ function bomb.loadlevel( level )
 		level = level,
 		tiles = tiles,
 		enemies = enemies,
-		playerpos = playerpos,
+		playerpos = {x = 2, y = 2},
 	}
 end
 
@@ -170,7 +200,7 @@ end
 
 function bomb.counttiles( state, tile )
 	local count = 0
-	for y, line in pairs( state.level ) do
+	for y, line in pairs( state.level.tiles ) do
 		for x, ch in pairs( line ) do
 			if ch == tile then
 				count = count + 1
