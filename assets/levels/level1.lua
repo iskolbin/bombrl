@@ -16,7 +16,7 @@ return {
 	},
 
 	bonuses = {
-		bombs = 1,
-		range = 1,
+		'Bombs',
+		'Range',
 	},
 }

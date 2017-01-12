@@ -5,7 +5,6 @@ luabox.init( luabox.INPUT_CURRENT, luabox.OUTPUT_256 )
 
 bomb.init()
 
-
 local active = true
 
 local function onkey( state, ch, key, mode )
@@ -30,11 +29,19 @@ end
 local function render( state )
 	for y, line in ipairs( state.level.tiles ) do
 		for x, ch in ipairs( line ) do
-			luabox.setcell( ch, x-1, y-1, ch == '*' and luabox.rgbf(1,1,1) or luabox.grayf(0.5)) 
+			local color
+			if ch == '*' then
+				color = luabox.rgbf(1,1,1)
+			elseif ch:byte() >= 97 and ch:byte() <= 122 then
+				color = luabox.rgbf(0,1,0)
+			else
+				color = luabox.grayf(0.5)
+			end
+			luabox.setcell( ch, x-1, y-1, color )
 		end
 	end
 	luabox.setcell( '@', state.player.x-1, state.player.y-1, luabox.rgbf(1,0,0))
-	for _, enemy in ipairs( state.level.enemies ) do
+	for enemy, _ in pairs( state.level.enemies ) do
 		if not enemy.killed then
 			luabox.setcell( enemy.prototype.symbol, enemy.x-1, enemy.y-1, luabox.rgbf(1,1,0))
 		end
