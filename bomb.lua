@@ -11,21 +11,28 @@ local bomb = {
 	},
 }
 
-bomb.DIRECTIONS_AND_NONE = {{ 0, 0,'none'}, unpack( bomb.DIRECTIONS )}
 
-local symbol2enemy = {}
-local symbol2bonus = {}
+local function cachesymbolmt( name )
+	return { __index = function( self, k )
+		if k == ' ' then
+			return nil
+		end
+		local item = assets[name][k]
+		rawset( self, item.symbol, item )
+		return item
+	end }
+end
+
+local symbol2enemy = setmetatable( {}, cachesymbolmt( 'enemies' ))
+local symbol2bonus = setmetatable( {}, cachesymbolmt( 'bonuses' ))
+
+bomb.symbol2enemy = symbol2enemy
+bomb.symbol2bonus = symbol2bonus
 
 local BOMB_DELAY = 4000
 local PLAYER_DELAY = 500
 
 function bomb.init()
-	for _, enemy in pairs( assets.enemies ) do
-		symbol2enemy[enemy.symbol] = enemy
-	end
-	for _, bonus in pairs( assets.bonuses ) do
-		symbol2bonus[bonus.symbol] = bonus
-	end
 end
 
 local function genlevel( level )
@@ -68,6 +75,7 @@ local function genenemies( level, tiles )
 			end
 			tiles[y][x] = ' '
 			local prototype = assets.enemies[e]
+			symbol2enemy[prototype.symbol] = prototype
 			local enemy = {
 				x = x,
 				y = y,
@@ -93,7 +101,9 @@ function bomb.loadlevel( level )
 	
 	for bonus, count in pairs( level.bonuses ) do
 		for i = 1, count do
-			bonuses[#bonuses+1] = assets.bonuses[bonus]
+			local prototype = assets.bonuses[bonus]
+			bonuses[#bonuses+1] = prototype
+			symbol2bonus[prototype.symbol] = prototype
 		end
 	end
 
