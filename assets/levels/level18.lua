@@ -1,14 +1,15 @@
 return {
-	name = 'level2',
-	next = 'level3',
+	name = 'level18',
+	next = 'level19',
 	width = 25,
 	height = 11,
-	density = 0.21,
+	density = 0.27,
 	enemies = {
 		Balloon = 3,
 		Onion = 3,
+		TigerHead = 2,
 	},
 	bonuses = {
-		Bomb = 1,
+		BombWalk = 1,
 	},
 }

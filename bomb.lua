@@ -11,10 +11,14 @@ local bomb = {
 	},
 }
 
+local RESERVED_SYMBOLS = {
+	[' '] = true,
+	['>'] = true,
+}
 
 local function cachesymbolmt( name )
 	return { __index = function( self, k )
-		if k == ' ' then
+		if RESERVED_SYMBOLS[k] then
 			return nil
 		end
 		local item = assets[name][k]
@@ -117,20 +121,13 @@ function bomb.loadlevel( level )
 	}
 end
 
-function bomb.newgame()
-	local level = bomb.loadlevel( assets.levels.level1 )
+function bomb.newlevel( levelname, player )
+	local level = bomb.loadlevel( assets.levels[levelname] )
+	player.x, player.y = level.playerpos.x, level.playerpos.y
 	local state = {
 		time = 0,
 		level = level,
-		player = {
-			player = true,
-			x = level.playerpos.x,
-			y = level.playerpos.y,
-			lives = 3,
-			range = 1,
-			bombs = 1,
-			speed = 1,
-		},
+		player = player,
 		placedbombs = 0,
 		log = {},
 		explossions = {},
@@ -143,6 +140,20 @@ function bomb.newgame()
 	end
 
 	return state
+end
+
+function bomb.newgame()
+	local player = {
+		player = true,
+		x = 2,
+		y = 2,
+		lives = 3,
+		range = 1,
+		bombs = 1,
+		speed = 1,
+		score = 0,
+	}
+	return bomb.newlevel( 'level1', player )
 end
 
 function bomb.log( state, msg )
@@ -230,7 +241,10 @@ local function dobombexplosion( state, bomb_ )
 	addexplossion( state, x, y )
 	state.player.killed = state.player.killed or sameplace( state.player, bomb )
 	for enemy, _ in pairs( state.level.enemies ) do
-		enemy.killed = enemy.killed or sameplace( enemy, bomb )
+		if not enemy.killed and sameplace( enemy, bomb ) then
+			state.player.score = score.player.score + enemy.prototype.score
+			enemy.killed = true
+		end
 	end
 	bomb.setch( state, x, y, ' ' )
 
@@ -245,9 +259,13 @@ local function dobombexplosion( state, bomb_ )
 			elseif ch == '*' then
 				bomb.setch( state, x_, y_, ' ' )
 				addexplossion( state, x_, y_ )
-				if ch == '*' then
-					if #state.level.bonuses > 0 then
-						if math.random( bomb.counttiles( state, '*' )) == 1 then
+				if ch == '*' and #state.level.bonuses > 0 or not state.level.exitfound then	
+					local count = bomb.counttiles( state, '*' ) - #state.level.bonuses - (state.level.exitfound and 0 or 1)
+					if math.random( count ) then
+						if not state.level.exitfound and math.random() > 0.5 then
+							bomb.setch( state, x_, y_, '>' )
+							state.level.exitfound = true
+						elseif #state.level.bonuses > 0 then
 							local bonus = table.remove( state.level.bonuses, math.random(#state.level.bonuses))
 							bomb.setch( state, x_, y_, bonus.symbol )
 						end
@@ -259,7 +277,10 @@ local function dobombexplosion( state, bomb_ )
 			place.x, place.y = x_, y_
 			state.player.killed = state.player.killed or sameplace( state.player, place )
 			for enemy, _ in pairs( state.level.enemies ) do
-				enemy.killed = enemy.killed or sameplace( enemy, place )
+				if not enemy.killed and sameplace( enemy, place ) then
+					state.player.score = state.player.score + enemy.prototype.score
+					enemy.killed = true
+				end
 			end
 
 			addexplossion( state, x_, y_ )
@@ -290,6 +311,9 @@ function bomb.updatestate( state )
 			if action.killed then
 				state.player.lives = state.player.lives - 1
 				action.killed = false
+				if state.player.lives <= 0 then
+					state.endgame = true
+				end
 			end
 			actions:enqueue( action, state.time + PLAYER_DELAY )
 			break
@@ -323,12 +347,33 @@ local function updatecollidebonus( state )
 	end
 end
 
+local function updatecollidexit( state )
+	local ch = bomb.getch( state, state.player.x, state.player.y )
+	if ch == '>' then
+		if bomb.isexitworking( state ) then
+			if state.level.level.next == nil then
+				state.endgame = true
+			else
+				local newstate = bomb.newlevel( state.level.level.next, state.player )
+				for k, v in pairs( newstate ) do
+					state[k] = v
+				end
+			end
+		end
+	end
+end
+
+function bomb.isexitworking( state )
+	return bomb.isallfoesdied( state )
+end
+
 function bomb.moveplayer( state, dx, dy )
 	if bomb.iswalkable( state, state.player.x + dx, state.player.y + dy ) then
 		state.player.x = state.player.x + dx
 		state.player.y = state.player.y + dy
 		updatecollidebonus( state )
 		updatecollidefoes( state )
+		updatecollidexit( state )
 	end
 end
 
@@ -340,6 +385,15 @@ function bomb.placebomb( state )
 		state.level.actions:enqueue( {bomb = true, x = x, y = y, range = state.player.range}, state.time + BOMB_DELAY )
 		state.placedbombs = state.placedbombs + 1
 	end
+end
+
+function bomb.isallfoesdied( state )
+	for e, _ in pairs( state.level.enemies ) do
+		if not e.killed then
+			return false
+		end
+	end
+	return true
 end
 
 return bomb

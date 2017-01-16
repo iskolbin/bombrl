@@ -1,12 +1,12 @@
 return {
-	name = 'level2',
-	next = 'level3',
+	name = 'level5',
+	next = 'level6',
 	width = 25,
 	height = 11,
-	density = 0.21,
+	density = 0.22,
 	enemies = {
-		Balloon = 3,
-		Onion = 3,
+		Onion = 4,
+		RectHead = 3,
 	},
 	bonuses = {
 		Bomb = 1,

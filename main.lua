@@ -27,6 +27,15 @@ local function update( state )
 end
 
 local function render( state )
+	if state.endgame then
+		if state.player.lives > 0 then
+			luabox.print( 'THE WINNAR ARE YOU', 1, 1, luabox.rgbf(1,1,1))
+		else
+			luabox.print( 'THE LOSAR ARE YOU', 1, 1, luabox.rgbf(1,1,1))
+		end
+		luabox.print( 'SCORE ' .. state.player.score, 1, 2, luabox.rgbf(1,1,1))
+		return
+	end
 	for y, line in ipairs( state.level.tiles ) do
 		for x, ch in ipairs( line ) do
 			local color
@@ -57,7 +66,7 @@ local function render( state )
 	for _, explossion in pairs( state.explossions ) do
 		luabox.setcell( '*', explossion.x-1, explossion.y-1, luabox.rgbf(1,0.5,0))
 	end
-	luabox.print( ('LIVES %d\nBOMBS %d\nRANGE %d\nSPEED %d'):format( state.player.lives, state.player.bombs, state.player.range, state.player.speed ), 0, 14, luabox.grayf(1) ) 
+	luabox.print( ('SCORE %d\nLIVES %d\nBOMBS %d\nRANGE %d\nSPEED %d'):format( state.player.score, state.player.lives, state.player.bombs, state.player.range, state.player.speed ), 0, 14, luabox.grayf(1) ) 
 end
 
 
