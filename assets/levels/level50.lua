@@ -1,6 +1,5 @@
 return {
 	name = 'level50',
-	next = 'level51',
 	width = 25,
 	height = 11,
 	density = 0.40,
